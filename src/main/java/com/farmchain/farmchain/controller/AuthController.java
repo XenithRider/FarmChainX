@@ -16,6 +16,7 @@ public class AuthController {
     private final AuthService authService ;
 
     public AuthController(AuthService authService){
+
         this.authService = authService ;
     }
 
@@ -27,6 +28,13 @@ public class AuthController {
         }
         return ResponseEntity.ok(result) ;
     }
+
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest login){
+        return ResponseEntity.ok(authService.login(login));
+    }
+
 
 
 }

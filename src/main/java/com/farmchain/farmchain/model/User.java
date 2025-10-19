@@ -3,6 +3,8 @@ package com.farmchain.farmchain.model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Entity   // Tells Hibernate to make a table out of this class
@@ -30,6 +32,9 @@ public class User {
             inverseJoinColumns = @JoinColumn(name="role_id")  //FK from Role Entity
     )
     private Set<Role> roles ;
+
+    @OneToMany( mappedBy = "farmer" , cascade = CascadeType.ALL , orphanRemoval = true)
+    private List<Product> products = new ArrayList<>();
 
 
 
