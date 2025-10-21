@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
 
-            System.out.println("✅ Role in JWT: " + role);
+            System.out.println("Role in JWT: " + role);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 List<SimpleGrantedAuthority> authorities =
@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.warn("Invalid JWT: " + ex.getMessage());
         }
 
-        // ✅ THIS LINE IS MANDATORY
+        // THIS LINE IS MANDATORY
         filterChain.doFilter(request, response);
     }
 }
