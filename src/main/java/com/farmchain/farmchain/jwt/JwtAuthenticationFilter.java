@@ -35,10 +35,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // ✅ Skip JWT filter for public endpoints
 
+        String path = request.getRequestURI();
+        System.out.println("[JWT Filter] Request path:" + path);
+
 
         final String authHeader = request.getHeader("Authorization");
+        System.out.println("[JWT Filter] Authorization Header: " + authHeader);
 
         if (authHeader == null || !authHeader.startsWith("Bearer")) {
+            System.out.println("[JWT Filter] No valid Authorization header found");
             filterChain.doFilter(request, response);
             return;
         }

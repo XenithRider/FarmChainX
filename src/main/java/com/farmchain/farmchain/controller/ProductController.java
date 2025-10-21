@@ -38,7 +38,7 @@ public class ProductController {
             @RequestParam("image") MultipartFile imageFile
     ) throws IOException {
 
-        System.out.println("🔥 [Controller] Entered /upload endpoint");
+        System.out.println(" [Controller] Entered /upload endpoint");
 
         if (imageFile.isEmpty()) {
             return ResponseEntity.badRequest().body(null);
