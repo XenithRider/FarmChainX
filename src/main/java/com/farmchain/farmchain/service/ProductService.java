@@ -1,12 +1,18 @@
 package com.farmchain.farmchain.service;
 
 import com.farmchain.farmchain.model.Product;
+import com.farmchain.farmchain.model.SupplyChainLog;
 import com.farmchain.farmchain.repository.ProductRepository;
 import com.farmchain.farmchain.repository.SupplyChainLogRepository;
 import com.farmchain.farmchain.repository.UserRepository;
+import com.farmchain.farmchain.util.QrCodeGenerator;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
