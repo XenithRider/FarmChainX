@@ -1,12 +1,11 @@
 package com.farmchain.farmchain.model;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-
 import java.util.Set;
 
 @Entity
-@Table(name="role")
+@Table(name = "roles")
 public class Role {
 
     @Id
@@ -17,7 +16,8 @@ public class Role {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @ManyToMany(mappedBy = "roles")
+    @ManyToMany(mappedBy = "roles" ,fetch = FetchType.LAZY )
+    @JsonIgnore
     private Set<User> users;
 
 
@@ -26,6 +26,7 @@ public class Role {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }
