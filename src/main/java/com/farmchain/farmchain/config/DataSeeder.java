@@ -19,23 +19,25 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
-    public void run(String... args) {
-        Set<String> roles = Set.of("ROLE_USER", "ROLE_ADMIN", "ROLE_CONSUMER", "ROLE_FARMER", "ROLE_DISTRIBUTOR");
+    public void run(String... args) throws Exception {
+
+        String[] roles = {
+                "ROLE_CONSUMER",
+                "ROLE_FARMER",
+                "ROLE_DISTRIBUTER",
+                "ROLE_RETAILER",
+                "ROLE_ADMIN"
+        };
 
         for (String roleName : roles) {
-            seedRole(roleName);
+            // ✅ use the correct repository method and field name
+            if (!roleRepository.existsByName(roleName)) {
+                Role role = new Role();
+                role.setName(roleName); // ✅ correct setter for Role.name
+                roleRepository.save(role);
+            }
         }
-    }
 
-    private void seedRole(String roleName) {
-        if (!roleRepository.existsByRoleName(roleName)) {
-            Role role = new Role();
-            role.setRoleName(roleName);
-            roleRepository.save(role);
-            System.out.println(LocalDateTime.now() + " - " + roleName + " created");
-        } else {
-            System.out.println(LocalDateTime.now() + " - " + roleName + " already exists");
-        }
+        System.out.println("✅ Role seeding completed successfully!");
     }
 }

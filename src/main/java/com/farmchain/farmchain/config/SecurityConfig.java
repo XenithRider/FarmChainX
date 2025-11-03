@@ -17,10 +17,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
@@ -34,27 +34,44 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                // Disable CSRF because we use JWT , not cookies
-                .csrf(csrf -> csrf.disable())
-                // Define access rules
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()  // Allow register/login
-                        .requestMatchers("/api/products/**").hasAnyAuthority("ROLE_FARMER") // only farmer can access
-                        .anyRequest().authenticated() // everything else require JWT
-                )
-                //If you also support HTTP Basic login (e.g., for testing or admin)
-//                .httpBasic(Customizer.withDefaults())
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-                // No sessions , JWT is stateless
+        http
+                // 🔒 Disable CSRF since we use JWT (stateless)
+                .csrf(csrf -> csrf.disable())
+
+                // 🔒 Stateless session (JWT-based)
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Add JWT filter before Spring's default login filter
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) ;
+                // ⚙️ Authorization rules
+                .authorizeHttpRequests(auth -> auth
 
+                        // 🌍 Public routes — open to everyone (no login required)
+                        .requestMatchers(
+                                "/api/auth/**",                   // login/register
+                                "/uploads/**",                     // images, static files
+                                "/api/verify/**",                  // QR scan verification (public + token-supported)
+                                "/api/products/*/qrcode/download"  // QR image download
+                        ).permitAll()
 
+                        // 👨‍🌾 Product endpoints — FARMER + supply chain roles
+                        .requestMatchers("/api/products/**")
+                        .hasAnyRole("FARMER", "DISTRIBUTER", "RETAILER", "ADMIN")
 
+                        // 🚚 Tracking endpoints — only DISTRIBUTER, RETAILER, ADMIN
+                        .requestMatchers("/api/track/**")
+                        .hasAnyRole("DISTRIBUTER", "RETAILER", "ADMIN")
+
+                        // 🧑‍💼 Admin-only endpoints
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        // 🔐 Everything else → must be authenticated
+                        .anyRequest().authenticated()
+                )
+
+                // 🧩 Add JWT filter before username-password auth filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
