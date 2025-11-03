@@ -35,12 +35,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        System.out.println("🧩 [JWT Filter] Running for path: " + path);
+        System.out.println(" [JWT Filter] Running for path: " + path);
 
-        // ✅ Only skip true public paths (login, uploads, QR download)
-        // ⚠️ DO NOT skip /api/verify — we want to parse token if available
+        //  Only skip true public paths (login, uploads, QR download)
+        // ️ DO NOT skip /api/verify — we want to parse token if available
         if (isPublicPath(path)) {
-            System.out.println("⚪ [JWT Filter] Public path, skipping token check");
+            System.out.println("[JWT Filter] Public path, skipping token check");
             filterChain.doFilter(request, response);
             return;
         }
@@ -48,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("⚪ [JWT Filter] No JWT token provided");
+            System.out.println(" [JWT Filter] No JWT token provided");
             filterChain.doFilter(request, response);
             return;
         }
@@ -78,17 +78,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                System.out.println("✅ [JWT Filter] Authenticated user: " + email + " with role: " + role);
+                System.out.println("[JWT Filter] Authenticated user: " + email + " with role: " + role);
             }
 
         } catch (JwtException ex) {
-            System.out.println("❌ [JWT Filter] Invalid JWT: " + ex.getMessage());
+            System.out.println(" [JWT Filter] Invalid JWT: " + ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    // ✅ FINAL: /api/verify removed from here
+    //  FINAL: /api/verify removed from here
     private boolean isPublicPath(String path) {
         return path.startsWith("/api/auth")
                 || path.startsWith("/uploads")
