@@ -3,11 +3,14 @@ package com.farmchain.farmchain.service;
 import com.farmchain.farmchain.model.SupplyChainLog;
 import com.farmchain.farmchain.repository.SupplyChainLogRepository;
 import com.farmchain.farmchain.util.HashUtil;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+
+@Service
 public class SupplyChainService {
 
     private final SupplyChainLogRepository supplyChainLogRepository;

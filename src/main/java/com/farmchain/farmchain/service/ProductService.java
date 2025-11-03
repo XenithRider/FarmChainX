@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -116,10 +119,10 @@ public class ProductService {
             // 🧩 Automatically get your computer’s LAN IP address
             String localIp = java.net.InetAddress.getLocalHost().getHostAddress();
             // ✅ Works on your laptop and mobile (same Wi-Fi)
-            return "http://" + localIp + ":8081";
+            return "http://" + localIp + ":8080";
         } catch (Exception e) {
             // fallback if LAN IP not found
-            return "http://localhost:8081";
+            return "http://localhost:8080";
         }
     }
 
