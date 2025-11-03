@@ -4,6 +4,7 @@ package com.farmchain.farmchain.model;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -13,28 +14,39 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id ;
+    private Long id;
 
     @Column(nullable = false)
-    private String name ;
+    private String name;
 
-    @Column(nullable = false , unique = true)
-    private String email ;
+    @Column(unique = true, nullable = false)
+    private String email;
 
     @Column(nullable = false)
-    private String password ;
+    private String password;
 
-
-    @ManyToMany(fetch = FetchType.EAGER)  // relationship User<->Role
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name="user_roles",   // Name of the JOIN TABLE
-            joinColumns = @JoinColumn(name="user_id"),  // FK from User Entity
-            inverseJoinColumns = @JoinColumn(name="role_id")  //FK from Role Entity
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles ;
+    private Set<Role> roles = new HashSet<>();
 
-    @OneToMany( mappedBy = "farmer" , cascade = CascadeType.ALL , orphanRemoval = true)
+
+    @OneToMany(mappedBy = "farmer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Product> products = new ArrayList<>();
+
+
+
+    public User() {}
+
+    public User(String name, String email, String password, Set<Role> roles) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.roles = roles;
+    }
 
 
 
@@ -76,5 +88,40 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public List<Product> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products;
+    }
+
+
+    /**
+     * Checks if the user has a given role name.
+     * Example: user.hasRole("ROLE_FARMER")
+     */
+    public boolean hasRole(String roleName) {
+        return roles.stream()
+                .anyMatch(role -> role.getName().equalsIgnoreCase(roleName));
+    }
+
+    /**
+     * Returns a list of all role names (e.g., [ROLE_FARMER, ROLE_ADMIN])
+     */
+    public List<String> getRoleNames() {
+        return roles.stream()
+                .map(Role::getName)
+                .toList();
+    }
+
+    @Override
+    public String toString() {
+        return "User{id=" + id +
+                ", email='" + email + '\'' +
+                ", roles=" + getRoleNames() +
+                '}';
     }
 }
