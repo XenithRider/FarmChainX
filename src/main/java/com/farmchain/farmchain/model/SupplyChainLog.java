@@ -13,20 +13,22 @@ public class SupplyChainLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long productId;   // Product being tracked
-    private Long fromUserId;  // Who handed over the product
-    private Long toUserId;    //Who received the product
-    private LocalDateTime timestamp ;
-    private String location ;
-    private String notes ;
-    private String prevHash;
-    private String hash ;
+    private Long productId;          // Product being tracked
+    private Long fromUserId;         // Who handed over the product
+    private Long toUserId;           // Who received the product
+    private LocalDateTime timestamp; // When the handover occurred
+    private String location;         // Place of handover (village, warehouse, etc.)
+    private String notes;            // Optional extra details
+    private String prevHash;         // Hash of previous block
+    private String hash;             // Hash of this block for verification
+
 
     public SupplyChainLog() {
     }
 
-    public SupplyChainLog(Long id, Long productId, Long fromUserId, Long toUserId, LocalDateTime timestamp, String location, String notes, String prevHash, String hash) {
-        this.id = id;
+    public SupplyChainLog(Long productId, Long fromUserId, Long toUserId,
+                          LocalDateTime timestamp, String location, String notes,
+                          String prevHash, String hash) {
         this.productId = productId;
         this.fromUserId = fromUserId;
         this.toUserId = toUserId;
@@ -36,6 +38,7 @@ public class SupplyChainLog {
         this.prevHash = prevHash;
         this.hash = hash;
     }
+
 
     public Long getId() {
         return id;

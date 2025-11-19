@@ -1,6 +1,7 @@
 package com.farmchain.farmchain.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -8,8 +9,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Entity   // Tells Hibernate to make a table out of this class
-@Table(name="user")
+@Entity
+@Table(name = "users")
 public class User {
 
     @Id
@@ -33,11 +34,9 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-
     @OneToMany(mappedBy = "farmer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Product> products = new ArrayList<>();
-
-
 
     public User() {}
 
@@ -47,8 +46,6 @@ public class User {
         this.password = password;
         this.roles = roles;
     }
-
-
 
     public Long getId() {
         return id;
@@ -98,19 +95,11 @@ public class User {
         this.products = products;
     }
 
-
-    /**
-     * Checks if the user has a given role name.
-     * Example: user.hasRole("ROLE_FARMER")
-     */
     public boolean hasRole(String roleName) {
         return roles.stream()
                 .anyMatch(role -> role.getName().equalsIgnoreCase(roleName));
     }
 
-    /**
-     * Returns a list of all role names (e.g., [ROLE_FARMER, ROLE_ADMIN])
-     */
     public List<String> getRoleNames() {
         return roles.stream()
                 .map(Role::getName)

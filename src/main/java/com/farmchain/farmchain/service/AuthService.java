@@ -8,21 +8,21 @@ import com.farmchain.farmchain.model.User;
 import com.farmchain.farmchain.repository.RoleRepository;
 import com.farmchain.farmchain.repository.UserRepository;
 import com.farmchain.farmchain.security.JwtUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Set;
 
 @Service
 public class AuthService {
 
-    // Dependencies injected via constructor
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    // Constructor injection for better testability and immutability
     public AuthService(
             UserRepository userRepository,
             RoleRepository roleRepository,
@@ -35,77 +35,62 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
     }
 
-    /**
-     * Handles user registration logic.
-     * Validates email uniqueness, prevents admin sign-up, assigns role, and saves user.
-     *
-     * @param request RegisterRequest containing name, email, password, and role
-     * @return Success or error message
-     */
-    public String register(RegisterRequest request) {
-        try {
-            // Check if email already exists
-            if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-                return "Email already exists!";
-            }
+    public AuthResponse register(RegisterRequest request) {
 
-            // Normalize role input to uppercase
-            String roleInput = request.getRole().toUpperCase();
-
-            // Prevent direct registration as ADMIN
-            if (roleInput.equals("ADMIN") || roleInput.equals("ROLE_ADMIN")) {
-                return "Cannot register as Admin!";
-            }
-
-            // Ensure role has "ROLE_" prefix
-            String chosenRole = roleInput.startsWith("ROLE_") ? roleInput : "ROLE_" + roleInput;
-
-            // Fetch role from repository
-            Role userRole = roleRepository.findByName(chosenRole)
-                    .orElseThrow(() -> new RuntimeException("Role not found: " + chosenRole));
-
-            // Create new user and populate fields
-            User user = new User();
-            user.setName(request.getName());
-            user.setEmail(request.getEmail());
-            user.setPassword(passwordEncoder.encode(request.getPassword())); // Encrypt password
-            user.setRoles(Set.of(userRole)); // Assign role
-
-            // Save user to database
-            userRepository.save(user);
-
-            return "User registered successfully as " + chosenRole + "!";
-
-        } catch (RuntimeException e) {
-            e.printStackTrace(); // Log error for debugging
-            return " Registration failed: " + e.getMessage();
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists!");
         }
+
+        String roleInput = request.getRole().trim().toUpperCase();
+
+        if (!Set.of("CONSUMER", "FARMER", "DISTRIBUTER", "RETAILER")
+                .contains(roleInput)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only Consumer, Farmer, Distributer, Retailer allowed");
+        }
+
+        Role role = roleRepository.findByName("ROLE_" + roleInput)
+                .orElseThrow(() -> new RuntimeException("Role not found in DB"));
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRoles(Set.of(role));
+        userRepository.save(user);
+
+        return new AuthResponse(null,role.getName(),request.getEmail());
     }
 
-    /**
-     * Handles user login logic.
-     * Validates credentials and generates JWT token.
-     *
-     * @param login LoginRequest containing email and password
-     * @return AuthResponse with token, role, and email
-     */
+
+
+
     public AuthResponse login(LoginRequest login) {
-        // Find user by email
+
         User user = userRepository.findByEmail(login.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Validate password
         if (!passwordEncoder.matches(login.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new RuntimeException("Invalid password!");
         }
 
-        // Extract role name from user roles
-        String role = user.getRoles().iterator().next().getName();
+        // ✅ Check if user has admin role
+        boolean isAdmin = user.getRoles()
+                .stream()
+                .anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
 
-        // Generate JWT token with email, role, and user ID
-        String token = jwtUtil.generateToken(user.getEmail(), role, user.getId());
+        // ✅ Primary role: ADMIN if present, else first assigned role
+        String primaryRole = isAdmin
+                ? "ROLE_ADMIN"
+                : user.getRoles()
+                .stream()
+                .map(Role::getName)
+                .findFirst()
+                .orElse("ROLE_CONSUMER");
 
-        // Return authentication response
-        return new AuthResponse(token, role, user.getEmail(), user.getId());
+        // ✅ Generate token
+        String token = jwtUtil.generateToken(user.getEmail(), primaryRole, user.getId());
+
+        return new AuthResponse(token, primaryRole, user.getEmail());
     }
 }
