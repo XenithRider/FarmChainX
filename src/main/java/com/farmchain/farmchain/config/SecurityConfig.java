@@ -1,8 +1,10 @@
 package com.farmchain.farmchain.config;
 
 import com.farmchain.farmchain.jwt.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -37,42 +39,60 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // 🔒 Disable CSRF since we use JWT (stateless)
                 .csrf(csrf -> csrf.disable())
 
-                // 🔒 Stateless session (JWT-based)
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Return JSON 401/403 so frontend can read the exact reason
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Forbidden\"}");
+                        })
+                )
 
-                // ⚙️ Authorization rules
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // 🌍 Public routes — open to everyone (no login required)
+                        // MUST BE FIRST to avoid 403 on register/login
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Allow Spring Boot default error page
+                        .requestMatchers("/error").permitAll()
+
+                        .requestMatchers("/api/products/*/feedback").permitAll()
                         .requestMatchers(
-                                "/api/auth/**",                   // login/register
-                                "/uploads/**",                     // images, static files
-                                "/api/verify/**",                  // QR scan verification (public + token-supported)
-                                "/api/products/*/qrcode/download"  // QR image download
+                                "/uploads/**",
+                                "/api/verify/**",
+                                "/api/products/*/qrcode/download"
                         ).permitAll()
 
-                        // 👨‍🌾 Product endpoints — FARMER + supply chain roles
+                        // Public product viewing for GETs
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/*").permitAll()
+
+                        // Product modification endpoints require roles
                         .requestMatchers("/api/products/**")
                         .hasAnyRole("FARMER", "DISTRIBUTER", "RETAILER", "ADMIN")
 
-                        // 🚚 Tracking endpoints — only DISTRIBUTER, RETAILER, ADMIN
+                        // Tracking endpoints
                         .requestMatchers("/api/track/**")
                         .hasAnyRole("DISTRIBUTER", "RETAILER", "ADMIN")
 
-                        // 🧑‍💼 Admin-only endpoints
-                        .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
-                        // 🔐 Everything else → must be authenticated
+                        // Admin only
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Everything else authenticated
                         .anyRequest().authenticated()
                 )
-
-                // 🧩 Add JWT filter before username-password auth filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }
