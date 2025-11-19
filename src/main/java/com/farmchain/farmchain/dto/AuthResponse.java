@@ -2,16 +2,17 @@ package com.farmchain.farmchain.dto;
 
 public class AuthResponse {
 
-    private String token ;
-    private String role ;
-    private String email;
-    private long userId;
+    private String token;
 
-    public AuthResponse(String token, String role, String email, long userId) {
+    private String role;
+
+    private String email;
+
+    public AuthResponse(String token, String role, String email) {
+        super();
         this.token = token;
         this.role = role;
         this.email = email;
-        this.userId = userId;
     }
 
     public String getToken() {
@@ -38,11 +39,6 @@ public class AuthResponse {
         this.email = email;
     }
 
-    public long getUserId() {
-        return userId;
-    }
 
-    public void setUserId(long userId) {
-        this.userId = userId;
-    }
+
 }
