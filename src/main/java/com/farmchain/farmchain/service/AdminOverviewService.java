@@ -7,6 +7,8 @@ import com.farmchain.farmchain.repository.SupplyChainLogRepository;
 import com.farmchain.farmchain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+
+
 @Service
 public class AdminOverviewService {
 
@@ -34,3 +36,4 @@ public class AdminOverviewService {
     }
 
 }
+

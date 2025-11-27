@@ -1,12 +1,15 @@
 package com.farmchain.farmchain.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import com.farmchain.farmchain.dto.FeedbackRequest;
 import com.farmchain.farmchain.model.Feedback;
 import com.farmchain.farmchain.repository.FeedbackRepository;
 import com.farmchain.farmchain.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+
 
 @Service
 public class FeedbackService {
@@ -22,28 +25,28 @@ public class FeedbackService {
     public Feedback addFeedback(Long productId, Long consumerId, FeedbackRequest feedback) {
 
         productRepository.findById(productId)
-                .orElseThrow(()-> new RuntimeException("Product is not available"));
+                .orElseThrow(() -> new RuntimeException("Product is not available"));
 
-        if(feedback.getRating()<1||feedback.getRating()>5) {
+        if (feedback.getRating() < 1 || feedback.getRating() > 5) {
             throw new RuntimeException("Rating must be 1 to 5");
         }
 
-        if(feedbackRepository.findByProductIdAndConsumerId(productId, consumerId).isPresent()) {
+        if (feedbackRepository.existsByProductIdAndConsumerId(productId, consumerId)) {
             throw new RuntimeException("You have already submitted the feedback for this product");
         }
 
         Feedback f = new Feedback();
-
         f.setProductId(productId);
         f.setConsumerId(consumerId);
         f.setRating(feedback.getRating());
-        f.setComment(feedback.getComment());
+        String comment = feedback.getComment() == null ? "" : feedback.getComment().trim();
+        f.setComment(comment);
+        f.setCreatedAt(LocalDateTime.now());
 
         return feedbackRepository.save(f);
-
     }
 
-    public List<Feedback> getFeedbackForProduct(Long productId){
+    public List<Feedback> getFeedbackForProduct(Long productId) {
         return feedbackRepository.findByProductId(productId);
     }
 }

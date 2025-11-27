@@ -16,4 +16,7 @@ public class CorsConfig implements WebMvcConfigurer {
                 .exposedHeaders("Content-Disposition")
                 .allowCredentials(true);
     }
+
+
+
 }

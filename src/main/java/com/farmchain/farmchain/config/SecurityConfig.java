@@ -7,16 +7,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
 @Configuration
-@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -37,62 +38,57 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
-
-                // Return JSON 401/403 so frontend can read the exact reason
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                        .authenticationEntryPoint((req, res, authEx) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\": \"Unauthorized - Please log in\"}");
                         })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"Forbidden\"}");
+                        .accessDeniedHandler((req, res, accessEx) -> {
+                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\": \"Forbidden - Insufficient permissions\"}");
                         })
                 )
-
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
-                        // MUST BE FIRST to avoid 403 on register/login
+                        // Public routes
                         .requestMatchers("/api/auth/**").permitAll()
-
-                        // Allow Spring Boot default error page
-                        .requestMatchers("/error").permitAll()
-
-                        .requestMatchers("/api/products/*/feedback").permitAll()
-                        .requestMatchers(
-                                "/uploads/**",
-                                "/api/verify/**",
-                                "/api/products/*/qrcode/download"
-                        ).permitAll()
-
-                        // Public product viewing for GETs
-                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/*").permitAll()
-
-                        // Product modification endpoints require roles
-                        .requestMatchers("/api/products/**")
-                        .hasAnyRole("FARMER", "DISTRIBUTER", "RETAILER", "ADMIN")
-
-                        // Tracking endpoints
-                        .requestMatchers("/api/track/**")
-                        .hasAnyRole("DISTRIBUTER", "RETAILER", "ADMIN")
-
+                        .requestMatchers("/error", "/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/verify/**").permitAll()
 
-                        // Admin only
+                        // Product-related public GETs
+                        .requestMatchers("/api/products/*/qrcode/download").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/by-uuid/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/{id}/public").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/*/feedbacks").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products/*/feedback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/products/*/feedback").hasRole("CONSUMER")
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**").permitAll()
+
+                        // Product management
+                        .requestMatchers("/api/products/upload").hasAnyRole("FARMER", "ADMIN")
+                        .requestMatchers("/api/products/**").hasAnyRole("FARMER", "DISTRIBUTOR", "RETAILER", "ADMIN")
+
+                        // Supply chain tracking
+                        .requestMatchers("/api/track/**").hasAnyRole("DISTRIBUTOR", "RETAILER", "ADMIN", "FARMER")
+
+                        // ✅ Allow consumers/farmers/retailers to request admin access
+                        .requestMatchers(HttpMethod.POST, "/api/admin/request-admin")
+                        .hasAnyRole("CONSUMER", "FARMER", "RETAILER", "ADMIN")
+
+                        // All other admin endpoints restricted to ADMIN
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // Everything else authenticated
+                        // Any other route must be authenticated
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 }

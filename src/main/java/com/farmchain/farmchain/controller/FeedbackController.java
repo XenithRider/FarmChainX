@@ -1,15 +1,24 @@
 package com.farmchain.farmchain.controller;
 
+import java.util.List;
+
 import com.farmchain.farmchain.dto.FeedbackRequest;
 import com.farmchain.farmchain.model.Feedback;
 import com.farmchain.farmchain.repository.UserRepository;
 import com.farmchain.farmchain.service.FeedbackService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/products")
@@ -25,22 +34,37 @@ public class FeedbackController {
 
     @PreAuthorize("hasRole('CONSUMER')")
     @PostMapping("/{id}/feedback")
-    public Feedback addFeedback(@PathVariable Long id, @RequestBody FeedbackRequest feedback) {
+    public ResponseEntity<?> addFeedback(@PathVariable Long id, @RequestBody FeedbackRequest feedback) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String email = auth.getName();
 
-        // ✅ logged-in user from JWT
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();  // this is always safe
+            Long consumerId = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"))
+                    .getId();
 
-        // ✅ fetch consumerId from DB
-        Long consumerId = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
-
-        return feedbackService.addFeedback(id, consumerId, feedback);
+            Feedback saved = feedbackService.addFeedback(id, consumerId, feedback);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (RuntimeException re) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", re.getMessage()));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "Internal server error"));
+        }
     }
 
-    @GetMapping("/{id}/feedback")
-    public List<Feedback> getFeedback(@PathVariable Long id) {
-        return feedbackService.getFeedbackForProduct(id);
+    @GetMapping("/{id}/feedbacks")
+    public ResponseEntity<?> getFeedbacks(@PathVariable Long id) {
+        try {
+            List<Feedback> feedbacks = feedbackService.getFeedbackForProduct(id);
+            return ResponseEntity.ok(feedbacks);
+        } catch (RuntimeException re) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", re.getMessage()));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "Internal server error"));
+        }
     }
 }

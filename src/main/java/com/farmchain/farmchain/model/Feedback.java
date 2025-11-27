@@ -1,11 +1,16 @@
 package com.farmchain.farmchain.model;
 
-import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 @Entity
-@Table(name="feedback")
+@Table(name = "feedback")
 public class Feedback {
 
     @Id
@@ -22,16 +27,18 @@ public class Feedback {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Feedback() {}
+    public Feedback() {
+    }
 
     public Feedback(Long id, Long productId, Long consumerId, int rating, String comment) {
-        super();
         this.id = id;
         this.productId = productId;
         this.consumerId = consumerId;
         this.rating = rating;
         this.comment = comment;
+        this.createdAt = LocalDateTime.now();
     }
+
 
     public Long getId() {
         return id;

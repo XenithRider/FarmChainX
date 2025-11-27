@@ -13,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+
+
 import java.util.Set;
 
 @Service
@@ -43,10 +45,10 @@ public class AuthService {
 
         String roleInput = request.getRole().trim().toUpperCase();
 
-        if (!Set.of("CONSUMER", "FARMER", "DISTRIBUTER", "RETAILER")
+        if (!Set.of("CONSUMER", "FARMER", "DISTRIBUTOR", "RETAILER")
                 .contains(roleInput)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Only Consumer, Farmer, Distributer, Retailer allowed");
+                    "Only Consumer, Farmer, Distributor, Retailer allowed");
         }
 
         Role role = roleRepository.findByName("ROLE_" + roleInput)
@@ -59,9 +61,7 @@ public class AuthService {
         user.setRoles(Set.of(role));
         userRepository.save(user);
 
-        // Generate token after registration
-        //String token = jwtUtil.generateToken(user.getEmail(), role.getName(), user.getId());
-        return new AuthResponse(null,role.getName(),request.getEmail());
+        return new AuthResponse(null, role.getName(), request.getEmail());
     }
 
 

@@ -1,7 +1,9 @@
 package com.farmchain.farmchain.repository;
 
-import com.farmchainx.farmchainx.model.AdminPromotionRequest;
-import com.farmchainx.farmchainx.model.User;
+
+
+import com.farmchain.farmchain.model.AdminPromotionRequest;
+import com.farmchain.farmchain.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 

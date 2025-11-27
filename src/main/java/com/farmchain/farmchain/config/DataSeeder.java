@@ -1,16 +1,17 @@
 package com.farmchain.farmchain.config;
 
+import java.util.Set;
+
+
 import com.farmchain.farmchain.model.Role;
 import com.farmchain.farmchain.model.User;
 import com.farmchain.farmchain.repository.RoleRepository;
 import com.farmchain.farmchain.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.Set;
+
 
 @Component
 public class DataSeeder implements CommandLineRunner {
@@ -29,7 +30,7 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
 
         // ✅ 1) Create all roles
-        String[] roles = {"ROLE_CONSUMER","ROLE_FARMER","ROLE_DISTRIBUTER","ROLE_RETAILER","ROLE_ADMIN"};
+        String[] roles = {"ROLE_CONSUMER","ROLE_FARMER","ROLE_DISTRIBUTOR","ROLE_RETAILER","ROLE_ADMIN"};
         for (String r : roles) {
             if (!roleRepo.existsByName(r)) {
                 Role role = new Role();

@@ -1,13 +1,14 @@
 package com.farmchain.farmchain.jwt;
 
 
+
 import com.farmchain.farmchain.security.JwtUtil;
 import io.jsonwebtoken.JwtException;
-import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,21 +35,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        System.out.println(" [JWT Filter] Running for path: " + path);
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-        //  Only skip true public paths (login, uploads, QR download)
-        // ️ DO NOT skip /api/verify — we want to parse token if available
+        String path = request.getRequestURI();
+        System.out.println("🧩 [JWT Filter] Running for path: " + path);
+
+        // ✅ Allow public paths to continue to the controller
         if (isPublicPath(path)) {
-            System.out.println("[JWT Filter] Public path, skipping token check");
+            System.out.println("⚪ [JWT Filter] Public path, skipping token check");
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader("Authorization");
 
+        // ✅ Allow requests without token to continue
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println(" [JWT Filter] No JWT token provided");
+            System.out.println("⚪ [JWT Filter] No JWT token provided");
             filterChain.doFilter(request, response);
             return;
         }
@@ -59,7 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
 
-            // Normalize role with ROLE_ prefix if missing
             if (role != null && !role.toUpperCase().startsWith("ROLE_")) {
                 role = "ROLE_" + role.toUpperCase();
             }
@@ -78,17 +83,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
 
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                System.out.println("[JWT Filter] Authenticated user: " + email + " with role: " + role);
+                System.out.println("✅ [JWT Filter] Authenticated user: " + email + " with role: " + role);
             }
 
         } catch (JwtException ex) {
-            System.out.println(" [JWT Filter] Invalid JWT: " + ex.getMessage());
+            System.out.println("❌ [JWT Filter] Invalid JWT: " + ex.getMessage());
+            // We still pass forward so that controller returns proper error
         }
 
         filterChain.doFilter(request, response);
     }
 
-    //  FINAL: /api/verify removed from here
     private boolean isPublicPath(String path) {
         return path.startsWith("/api/auth")
                 || path.startsWith("/uploads")
